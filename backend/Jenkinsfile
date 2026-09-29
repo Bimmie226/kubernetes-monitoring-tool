@@ -5,37 +5,38 @@ pipeline {
 
     stages {
         stage('Build') {
-            // when {
-            //     changeset "backend/**"
-            // }
             steps {
                 sh(
-                    script: 
-                    '''
-                        cd backend/app
+                    script: '''
+                        cd backend
 
                         python3.12 -m venv .venv
                         . .venv/bin/activate
 
                         python -m pip install --upgrade pip
-                        pip install -r requirements.txt
-                    ''', label: "Build stage"
+                        pip install -r app/requirements.txt
+
+                        python --version
+                        python -m uvicorn --version
+                    ''',
+                    label: "Build stage"
                 )
             }
         }
 
         stage('Deploy') {
-            // when {
-            //     changeset "backend/**"
-            // } 
             steps {
                 sh(
-                    script: 
-                    '''
+                    script: '''
                         cd backend
+
                         . .venv/bin/activate
-                        python3.12 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload 
-                    ''', label: "Deploy Stage"
+
+                        python -m uvicorn app.main:app \
+                            --host 0.0.0.0 \
+                            --port 8000
+                    ''',
+                    label: "Deploy Stage"
                 )
             }
         }
