@@ -33,7 +33,7 @@ pipeline {
                     script: 
                     '''
                         cd backend
-                        python -m app.main:app --host 0.0.0.0 --port 8000 --reload 
+                        python3.12 -m app.main:app --host 0.0.0.0 --port 8000 --reload 
                     ''', label: "Deploy Stage"
                 )
             }
