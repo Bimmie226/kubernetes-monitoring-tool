@@ -5,7 +5,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# mysqlclient in requirements.txt needs MariaDB headers and a C compiler.
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential \

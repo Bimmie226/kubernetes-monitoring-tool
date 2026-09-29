@@ -43,6 +43,9 @@ pipeline {
         }
 
         stage('Deploy') {
+            when {
+                changeset "backend/**"
+            } 
             steps {
                 withCredentials([
                     usernamePassword (
