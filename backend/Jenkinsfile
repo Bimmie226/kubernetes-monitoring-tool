@@ -12,33 +12,10 @@ pipeline {
                 sh(
                     script: 
                     '''
-                        docker build -t luongngocvu/be-k8s-tool:latest /var/lib/jenkins/workspace/k8s-monitoring-tool/backend/backend
+                        cd backend/app
+                        pip install -r requirements.txt
                     ''', label: "Build stage"
                 )
-            }
-        }
-
-        stage('Push Image') {
-            when {
-                changeset "backend/**"
-            }   
-            steps {
-                withCredentials([
-                    usernamePassword (
-                        credentialsId: 'dockerhub-user', 
-                        usernameVariable: 'DOCKER_USER', 
-                        passwordVariable: 'DOCKER_TOKEN'
-                    )
-                ]) {
-                    sh(
-                        script: 
-                        '''
-                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push luongngocvu/be-k8s-tool:latest 
-                            docker logout 
-                        ''', label: "Push image Stage"
-                    )
-                }
             }
         }
 
@@ -47,24 +24,13 @@ pipeline {
                 changeset "backend/**"
             } 
             steps {
-                withCredentials([
-                    usernamePassword (
-                        credentialsId: 'dockerhub-user', 
-                        usernameVariable: 'DOCKER_USER', 
-                        passwordVariable: 'DOCKER_TOKEN'
-                    )
-                ]) {
-                    sh(
-                        script: 
-                        '''
-                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker pull luongngocvu/be-k8s-tool:latest 
-                            docker rm -f be-k8s-tool 
-                            docker run --name be-k8s-tool -dp 8000:8000 luongngocvu/be-k8s-tool:latest 
-                            docker logout 
-                        ''', label: "Deploy Stage"
-                    )
-                }
+                sh(
+                    script: 
+                    '''
+                        cd backend
+                        python -m app.main:app --host 0.0.0.0 --port 8000 --reload 
+                    ''', label: "Deploy Stage"
+                )
             }
         }
     }
