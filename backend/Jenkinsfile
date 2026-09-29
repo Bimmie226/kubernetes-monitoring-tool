@@ -5,9 +5,9 @@ pipeline {
 
     stages {
         stage('Build') {
-            when {
-                changeset "backend/**"
-            }
+            // when {
+            //     changeset "backend/**"
+            // }
             steps {
                 sh(
                     script: 
@@ -25,9 +25,9 @@ pipeline {
         }
 
         stage('Deploy') {
-            when {
-                changeset "backend/**"
-            } 
+            // when {
+            //     changeset "backend/**"
+            // } 
             steps {
                 sh(
                     script: 
