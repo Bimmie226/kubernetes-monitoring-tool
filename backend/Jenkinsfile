@@ -12,7 +12,7 @@ pipeline {
                 sh(
                     script: 
                     '''
-                        docker build -t luongngocvu/be-k8s-tool:latest /var/lib/jenkins/workspace/k8s-monitoring-tool/backend
+                        docker build -t luongngocvu/be-k8s-tool:latest /var/lib/jenkins/workspace/k8s-monitoring-tool/backend/backend
                     ''', label: "Build stage"
                 )
             }
