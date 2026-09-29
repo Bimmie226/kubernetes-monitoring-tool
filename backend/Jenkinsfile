@@ -26,16 +26,23 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh(
-                    script: '''
-                        cd backend
+                withCredentials([
+                    file(
+                        credentialId: 'k8s-monitor-tool-be', 
+                        variable: 'ENV_FILE'
+                    )
+                ]) {
+                    sh(
+                        script: '''
+                            cp "$ENV_FILE" backend/.env 
+                            cd backend
 
-                        . .venv/bin/activate
+                            . .venv/bin/activate
 
-                        python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-                    ''',
-                    label: "Deploy Stage"
-                )
+                            python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+                        '''
+                    )
+                }
             }
         }
     }
