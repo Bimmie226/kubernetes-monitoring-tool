@@ -4,21 +4,64 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'echo "Testing application..."'
-            }
-        }
-
         stage('Build') {
+            when {
+                changeset "backend/**"
+            }
             steps {
-                sh 'echo "Building application..."'
+                sh(
+                    script: 
+                    '''
+                        docker build -t luongngocvu/BE-k8s-tool:latest /var/lib/jenkins/workspace/k8s-monitoring-tool/backend
+                    ''', label: "Build stage"
+                )
+            }
+        }
+
+        stage('Push Image') {
+            when {
+                changeset "backend/**"
+            }   
+            steps {
+                withCredentials([
+                    usernamePassword (
+                        credentialsId: 'dockerhub-user', 
+                        usernameVariable: 'DOCKER_USER', 
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh(
+                        script: 
+                        '''
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push luongngocvu/BE-k8s-tool:latest 
+                            docker logout 
+                        ''', label: "Push image Stage"
+                    )
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withCredentials([
+                    usernamePassword (
+                        credentialsId: 'dockerhub-user', 
+                        usernameVariable: 'DOCKER_USER', 
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh(
+                        script: 
+                        ```
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker pull luongngocvu/BE-k8s-tool:latest 
+                            docker rm -f BE-k8s-tool 
+                            docker run --name BE-k8s-tool -dp 8000:8000 luongngocvu/BE-k8s-tool:latest 
+                            docker logout 
+                        ```, label: "Build Stage"
+                    )
+                }
             }
         }
     }
