@@ -53,13 +53,13 @@ pipeline {
                 ]) {
                     sh(
                         script: 
-                        ```
+                        '''
                             echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
                             docker pull luongngocvu/BE-k8s-tool:latest 
                             docker rm -f BE-k8s-tool 
                             docker run --name BE-k8s-tool -dp 8000:8000 luongngocvu/BE-k8s-tool:latest 
                             docker logout 
-                        ```, label: "Build Stage"
+                        ''', label: "Deploy Stage"
                     )
                 }
             }
