@@ -1,20 +1,53 @@
-pipeline{
-    agent{
-        label "single-node"
+pipeline {
+    agent {
+        label 'single-node'
     }
-    stages{
-        stage("Deploy"){
-            when {
-                changeset "frontend/**"
-            }
+
+    stages {
+        stage('Build') {
             steps {
                 sh(
                     script: '''
-                        chown -R luongvn. . 
-                        sudo su luongvn -c "python3.12 -m venv .venv; . .venv/bin/activate; nohup python -m http.server 5500 --bind 0.0.0.0 --directory frontend > nohup-fe.out 2>&1 &"
-                    ''', 
-                    label: "Deploy stage"
+                        chown -R luongvn. .
+                        docker build -t luongngocvu/k8s-tool-fe:latest ./frontend
+                    ''',
+                    label: "Build stage"
                 )
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                withCredentials([
+                    usernamePassword (
+                        credentialsId: 'dockerhub-user', 
+                        usernameVariable: 'DOCKER_USER', 
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh(
+                        script: '''
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push luongngocvu/k8s-tool-fe:latest
+                            docker logout
+                        ''', 
+                        label: "Push image stage"
+                    )
+                }
+            }
+        }   
+
+        stage('Deploy') {
+            steps {
+                {
+                    sh(
+                        script: '''
+                            docker rm -f k8s-tool-fe || true
+                            docker run --name k8s-tool-fe -dp 80:80 --network minikube luongngocvu/k8s-tool-fe:latest
+                        ''', 
+                        label: "Deploy stage"
+                    )
+                }
             }
         }
     }
