@@ -11,19 +11,37 @@ pipeline {
             steps {
                 sh(
                     script: '''
-                        chown -R luongvn. . 
-                        cd backend
-
-                        python3.12 -m venv .venv
-                        . .venv/bin/activate
-
-                        python -m pip install --upgrade pip
-                        pip install -r app/requirements.txt
+                        chown -R luongvn. .
+                        docker build -t luongngocvu/k8s-tool-be:latest ./backend
                     ''',
                     label: "Build stage"
                 )
             }
         }
+
+        stage('Push Image') {
+            when {
+                changeset "backend/**"
+            }
+            steps {
+                withCredentials([
+                    usernamePassword (
+                        credentialsId: 'dockerhub-user', 
+                        usernameVariable: 'DOCKER_USER', 
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh(
+                        script: '''
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push luongngocvu/k8s-tool-be:latest
+                            docker logout
+                        ''', 
+                        label: "Push image stage"
+                    )
+                }
+            }
+        }   
 
         stage('Deploy') {
             when {
@@ -32,17 +50,14 @@ pipeline {
             steps {
                 withCredentials([
                     file(
-                        credentialsId: 'k8s-monitor-tool-be', 
+                        credentialsId: 'k8s-monitor-tool-be',
                         variable: 'ENV_FILE'
                     )
                 ]) {
                     sh(
                         script: '''
-                            sudo su luongvn -c "touch backend/.env"
-                            cp "$ENV_FILE" backend/.env 
-                            cd backend
-                            sudo su luongvn -c "kill -9 $(ps -ef | grep uvicorn | grep -v grep | awk '{print $2}')"
-                            sudo su luongvn -c ". .venv/bin/activate; nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > nohup-be.out 2>&1 &"
+                            docker rm -f k8s-tool-be || true
+                            docker run --name k8s-tool-be -dp 8000:8000 --network minikube --env-file "$ENV_FILE" -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest
                         ''', 
                         label: "Deploy stage"
                     )
