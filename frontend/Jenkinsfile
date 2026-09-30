@@ -8,7 +8,8 @@ pipeline{
                 sh(
                     script: '''
                         chown -R luongvn. . 
-                        sudo su luongvn -c "nohup python -m http.server 5500 --bind 0.0.0.0 --directory frontend > nohup-fe.out 2>&1 &"
+                        cd frontend
+                        sudo su luongvn -c "nohup python -m http.server 5500 --bind 0.0.0.0 > nohup-fe.out 2>&1 &"
                     '''
                 )
             }
