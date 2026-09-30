@@ -14,5 +14,26 @@ pipeline {
                 )
             }
         }
+
+        stage('Push Image') {
+            steps {
+                withCredentials([
+                    usernamePassword (
+                        credentialsId: 'dockerhub-user', 
+                        usernameVariable: 'DOCKER_USER', 
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh(
+                        script: '''
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push luongngocvu/k8s-tool-be:latest 
+                            docker logout
+                        ''', 
+                        label: "Push image stage"
+                    )
+                }
+            }
+        }   
     }
 }
