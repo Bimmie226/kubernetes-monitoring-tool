@@ -9,7 +9,7 @@ pipeline {
                 sh(
                     script: '''
                         chown -R luongvn. .
-                        sudo su luongvn -c "docker build -t luongngocvu/k8s-tool-be:latest ./backend"
+                        docker build -t luongngocvu/k8s-tool-be:latest ./backend
                     ''',
                     label: "Build stage"
                 )
@@ -27,9 +27,9 @@ pipeline {
                 ]) {
                     sh(
                         script: '''
-                            sudo su luongvn -c "echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin"
-                            sudo su luongvn -c "docker push luongngocvu/k8s-tool-be:latest"
-                            sudo su luongvn -c "docker logout"
+                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push luongngocvu/k8s-tool-be:latest
+                            docker logout
                         ''', 
                         label: "Push image stage"
                     )
@@ -47,8 +47,8 @@ pipeline {
                 ]) {
                     sh(
                         script: '''
-                            sudo su luongvn -c "docker rm -f k8s-tool-be"
-                            sudo su luongvn -c "docker run --name k8s-tool-be -dp 8000:8000 --network minikube --env-file "$ENV_FILE" -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest"
+                            sudo su luongvn -c "docker rm -f k8s-tool-be
+                            docker run --name k8s-tool-be -dp 8000:8000 --network minikube --env-file "$ENV_FILE" -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest
                         ''', 
                         label: "Deploy stage"
                     )
