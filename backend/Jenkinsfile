@@ -42,7 +42,7 @@ pipeline {
                 sh(
                     script: '''
                         sudo su luongvn -c "docker rm -f k8s-tool-be"
-                        sudo su luongvn -c "docker run --name k8s-tool-be -dp 8000:8000 -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest"
+                        sudo su luongvn -c "docker run --name k8s-tool-be -dp 8000:8000 --network minikube -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest"
                     ''', 
                     label: "Deploy stage"
                 )
