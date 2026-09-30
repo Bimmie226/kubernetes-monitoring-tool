@@ -5,6 +5,9 @@ pipeline {
 
     stages {
         stage('Build') {
+            when {
+                changeset "backend/**"
+            }
             steps {
                 sh(
                     script: '''
@@ -23,6 +26,9 @@ pipeline {
         }
 
         stage('Deploy') {
+            when {
+                changeset "backend/**"
+            }
             steps {
                 withCredentials([
                     file(
@@ -37,7 +43,8 @@ pipeline {
                             cd backend
                             sudo su luongvn -c "kill -9 $(ps -ef | grep uvicorn | grep -v grep | awk '{print $2}')"
                             sudo su luongvn -c ". .venv/bin/activate; nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > nohup-be.out 2>&1 &"
-                        '''
+                        ''', 
+                        label: "Deploy stage"
                     )
                 }
             }
