@@ -47,7 +47,7 @@ pipeline {
                 ]) {
                     sh(
                         script: '''
-                            docker rm -f k8s-tool-be
+                            docker rm -f k8s-tool-be || true
                             docker run --name k8s-tool-be -dp 8000:8000 --network minikube --env-file "$ENV_FILE" -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest
                         ''', 
                         label: "Deploy stage"
