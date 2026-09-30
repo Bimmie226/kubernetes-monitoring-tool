@@ -8,7 +8,8 @@ pipeline {
             steps {
                 sh(
                     script: '''
-                        docker build -t luongngocvu/k8s-tool-be:latest ./backend 
+                        chown -R luongvn. .
+                        sudo su luongvn -c "docker build -t luongngocvu/k8s-tool-be:latest ./backend"
                     ''',
                     label: "Build stage"
                 )
@@ -27,8 +28,8 @@ pipeline {
                     sh(
                         script: '''
                             echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push luongngocvu/k8s-tool-be:latest 
-                            docker logout
+                            sudo su luongvn -c "docker push luongngocvu/k8s-tool-be:latest"
+                            sudo su luongvn -c "docker logout"
                         ''', 
                         label: "Push image stage"
                     )
@@ -40,8 +41,8 @@ pipeline {
             steps {
                 sh(
                     script: '''
-                        docker rm -f k8s-tool-be
-                        docker run --name k8s-tool-be -dp 8000:8000 luongngocvu/k8s-tool-be:latest
+                        sudo su luongvn -c "docker rm -f k8s-tool-be"
+                        sudo su luongvn -c "docker run --name k8s-tool-be -dp 8000:8000 luongngocvu/k8s-tool-be:latest"
                     ''', 
                     label: "Deploy stage"
                 )
