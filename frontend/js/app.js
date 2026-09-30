@@ -115,7 +115,7 @@ async function submitManifest(event) {
         try {
             response = await fetch(`${baseUrl.href.replace(/\/$/, "")}${endpoint}`, options);
         } catch {
-            throw new Error("Không nhận được phản hồi từ backend. Kiểm tra địa chỉ API, kết nối mạng và CORS. Khi chạy local, mở giao diện tại http://127.0.0.1:5500 hoặc http://localhost:5500.");
+            throw new Error("Không nhận được phản hồi từ backend. Kiểm tra địa chỉ API, kết nối mạng và CORS. Mở giao diện tại http://192.168.174.101:5500 hoặc địa chỉ local được backend cho phép.");
         }
         let data;
         try { data = await response.json(); } catch { data = null; }

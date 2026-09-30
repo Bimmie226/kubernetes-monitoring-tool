@@ -16,6 +16,7 @@ try:
     print("Cập nhật thành công") 
     print("Status", check_run.status)
     print("Finished at", check_run.finished_at)
+    print("dfjalkf")
 
     fail_check_run(db, check_run, "Test error")
 finally: 

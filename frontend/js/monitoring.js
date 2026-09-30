@@ -175,7 +175,7 @@
                 response = await fetch(`${api.href.replace(/\/$/, "")}/api/monitoring/${encodeURIComponent(namespace)}/check`, { method: "POST", signal: controller.signal });
             } catch (error) {
                 if (error.name === "AbortError") throw new Error("Chờ quá 60 giây. Backend có thể vẫn đang xử lý; hãy kiểm tra kết nối trước khi thử lại.");
-                throw new Error("Không kết nối được backend. Kiểm tra địa chỉ API, mạng và CORS. Khi chạy local, mở frontend tại http://127.0.0.1:5500 hoặc http://localhost:5500.");
+                throw new Error("Không kết nối được backend. Kiểm tra địa chỉ API, mạng và CORS. Mở frontend tại http://192.168.174.101:5500 hoặc địa chỉ local được backend cho phép.");
             }
             if (!response.ok) throw new Error(`Không lấy được trạng thái (HTTP ${response.status}). Kiểm tra namespace, quyền Kubernetes và các dịch vụ backend.`);
             let payload;

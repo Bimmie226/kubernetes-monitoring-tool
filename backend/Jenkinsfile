@@ -1,0 +1,53 @@
+pipeline {
+    agent {
+        label 'single-node'
+    }
+
+    stages {
+        stage('Build') {
+            when {
+                changeset "backend/**"
+            }
+            steps {
+                sh(
+                    script: '''
+                        chown -R luongvn. . 
+                        cd backend
+
+                        python3.12 -m venv .venv
+                        . .venv/bin/activate
+
+                        python -m pip install --upgrade pip
+                        pip install -r app/requirements.txt
+                    ''',
+                    label: "Build stage"
+                )
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                changeset "backend/**"
+            }
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'k8s-monitor-tool-be', 
+                        variable: 'ENV_FILE'
+                    )
+                ]) {
+                    sh(
+                        script: '''
+                            sudo su luongvn -c "touch backend/.env"
+                            cp "$ENV_FILE" backend/.env 
+                            cd backend
+                            sudo su luongvn -c "kill -9 $(ps -ef | grep uvicorn | grep -v grep | awk '{print $2}')"
+                            sudo su luongvn -c ". .venv/bin/activate; nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > nohup-be.out 2>&1 &"
+                        ''', 
+                        label: "Deploy stage"
+                    )
+                }
+            }
+        }
+    }
+}
