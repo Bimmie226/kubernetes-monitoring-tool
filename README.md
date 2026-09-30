@@ -136,7 +136,7 @@ Giao diện có trạng thái loading, empty, error và success; hỗ trợ màn
 | `POST` | `/api/metrics/node` | Nhận CPU, RAM và disk metrics từ agent |
 | `POST` | `/api/metrics/pods` | Nhận danh sách trạng thái ready của Pod |
 
-Swagger UI có tại `http://127.0.0.1:8000/docs` khi backend đang chạy.
+Swagger UI có tại `http://192.168.174.101:8000/docs` khi backend đang chạy trên máy có IP này.
 
 ## Yêu cầu
 
@@ -196,24 +196,24 @@ Kích hoạt virtual environment, sau đó:
 
 ```sh
 python -m pip install -r app/requirements.txt
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend khởi tạo Kubernetes clients khi import ứng dụng, vì vậy kubeconfig phải hợp lệ trước khi chạy.
+Backend khởi tạo Kubernetes clients khi import ứng dụng, vì vậy kubeconfig phải hợp lệ trước khi chạy. `0.0.0.0` cho phép server lắng nghe trên các địa chỉ của máy, gồm `192.168.174.101` nếu IP này được gán cho máy.
 
 ### 3. Frontend
 
 Từ thư mục gốc repository:
 
 ```sh
-python -m http.server 5500 --bind 127.0.0.1 --directory frontend
+python -m http.server 5500 --bind 0.0.0.0 --directory frontend
 ```
 
-Mở `http://127.0.0.1:5500/monitoring.html`. Backend hiện cho phép CORS từ `http://127.0.0.1:5500` và `http://localhost:5500`.
+Mở `http://192.168.174.101:5500/monitoring.html` hoặc trang Apply Manifest tại `http://192.168.174.101:5500/index.html`. Cả hai trang mặc định gọi API tại `http://192.168.174.101:8000`. Backend cho phép CORS từ `http://192.168.174.101:5500`, `http://127.0.0.1:5500` và `http://localhost:5500`. Nếu địa chỉ backend khác, có thể sửa ngay trong ô **Địa chỉ API** trên giao diện.
 
 ### 4. Metric agent
 
-Sửa `NODE_API_URL` và `POD_API_URL` trong `agent/metric_agent.py` cho đúng địa chỉ backend, sau đó chạy một lần:
+`NODE_API_URL` và `POD_API_URL` trong `agent/metric_agent.py` mặc định trỏ tới `192.168.174.101:8000`. Nếu backend chạy ở địa chỉ khác, sửa các URL này trước khi chạy agent một lần:
 
 ```sh
 cd agent

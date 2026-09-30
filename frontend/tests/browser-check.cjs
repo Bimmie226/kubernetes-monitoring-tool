@@ -112,6 +112,7 @@ async function run() {
     await command('Page.enable');
     await command('Page.navigate', { url: origin });
     await until('document.readyState === "complete" && typeof submitManifest === "function"');
+    assert.equal(await evaluate("element('api-url').value"), 'http://192.168.174.101:8000');
     await evaluate(`element('api-url').value = ${JSON.stringify(origin)}`);
     assert.equal(requests.length, 0, 'No automatic apply on page load');
     await evaluate("element('submit-button').click()");
@@ -162,6 +163,7 @@ async function run() {
     const beforeMonitoring = requests.length;
     await evaluate("document.querySelector('a[href=\"monitoring.html\"]').click()");
     await until('document.readyState === "complete" && !!document.getElementById("monitoring-form")');
+    assert.equal(await evaluate("document.getElementById('monitoring-api').value"), 'http://192.168.174.101:8000');
     assert.equal(requests.length, beforeMonitoring, 'Monitoring must wait for explicit submit');
     await evaluate(`document.getElementById('monitoring-api').value = ${JSON.stringify(origin)}; document.getElementById('namespace').value = 'bad/name'; document.getElementById('check-button').click()`);
     assert.equal(requests.length, beforeMonitoring, 'Reject invalid namespace locally');

@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from kubernetes import client, config
 from kubernetes.config.config_exception import ConfigException
 
-NODE_API_URL = "http://192.168.174.1:8000/api/metrics/node"
-POD_API_URL = "http://192.168.174.1:8000/api/metrics/pods"
+NODE_API_URL = "http://192.168.174.101:8000/api/metrics/node"
+POD_API_URL = "http://192.168.174.101:8000/api/metrics/pods"
 
 core_v1 = None
 
