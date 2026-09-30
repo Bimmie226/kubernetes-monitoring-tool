@@ -27,7 +27,7 @@ pipeline {
                 ]) {
                     sh(
                         script: '''
-                            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                            sudo su luongvn -c "echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin"
                             sudo su luongvn -c "docker push luongngocvu/k8s-tool-be:latest"
                             sudo su luongvn -c "docker logout"
                         ''', 
