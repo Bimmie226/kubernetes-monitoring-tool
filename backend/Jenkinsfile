@@ -35,5 +35,17 @@ pipeline {
                 }
             }
         }   
+
+        stage('Deploy') {
+            steps {
+                sh(
+                    script: '''
+                        docker rm -f k8s-tool-be
+                        docker run --name k8s-tool-be -dp 8000:8000 luongngocvu/k8s-tool-be:latest
+                    ''', 
+                    label: "Deploy stage"
+                )
+            }
+        }
     }
 }
