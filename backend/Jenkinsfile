@@ -32,12 +32,11 @@ pipeline {
                 ]) {
                     sh(
                         script: '''
-                            whoami
-                            # touch backend/.env
-                            # cp "$ENV_FILE" backend/.env 
-                            # cd backend
-                            # . .venv/bin/activate
-                            # python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+                            sudo su luongvn -c "touch backend/.env"
+                            cp "$ENV_FILE" backend/.env 
+                            cd backend
+                            . .venv/bin/activate
+                            sudo su luongvn -c "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
                         '''
                     )
                 }
