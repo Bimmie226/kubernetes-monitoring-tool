@@ -5,6 +5,9 @@ pipeline {
 
     stages {
         stage('Build') {
+            when {
+                changeset "frontend/**"
+            }
             steps {
                 sh(
                     script: '''
@@ -17,6 +20,9 @@ pipeline {
         }
 
         stage('Push Image') {
+            when {
+                changeset "frontend/**"
+            }
             steps {
                 withCredentials([
                     usernamePassword (
@@ -38,6 +44,9 @@ pipeline {
         }   
 
         stage('Deploy') {
+            when {
+                changeset "frontend/**"
+            }
             steps {
                 sh(
                     script: '''
