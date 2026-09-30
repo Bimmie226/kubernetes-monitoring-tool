@@ -40,7 +40,7 @@ pipeline {
         stage('Deploy') {
             withCredentials([
                 file(
-                    credentialsId: 'k8s-monitor-tool-be'
+                    credentialsId: 'k8s-monitor-tool-be',
                     variable: 'ENV_FILE'
                 )
             ])
