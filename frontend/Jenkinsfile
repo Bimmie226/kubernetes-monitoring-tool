@@ -1,0 +1,17 @@
+pipeline{
+    agent{
+        label "single-node"
+    }
+    stages{
+        stage("Deploy"){
+            steps{
+                sh(
+                    script: '''
+                        chown -R luongvn. . 
+                        sudo su luongvn -c "nohup python -m http.server 5500 --bind 0.0.0.0 --directory frontend > nohup-fe.out 2>&1 &"
+                    '''
+                )
+            }
+        }
+    }
+}
