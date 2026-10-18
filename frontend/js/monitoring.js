@@ -175,7 +175,7 @@
                 response = await fetch(`${api.href.replace(/\/$/, "")}/api/monitoring/${encodeURIComponent(namespace)}/check`, { method: "POST", signal: controller.signal });
             } catch (error) {
                 if (error.name === "AbortError") throw new Error("Chờ quá 60 giây. Backend có thể vẫn đang xử lý; hãy kiểm tra kết nối trước khi thử lại.");
-                throw new Error("Không kết nối được backend. Kiểm tra địa chỉ API, mạng và CORS. Mở frontend tại http://192.168.174.101:5500 hoặc địa chỉ local được backend cho phép.");
+                throw new Error("Không kết nối được backend. Kiểm tra địa chỉ API, mạng và CORS; đảm bảo backend cho phép origin của frontend.");
             }
             if (!response.ok) throw new Error(`Không lấy được trạng thái (HTTP ${response.status}). Kiểm tra namespace, quyền Kubernetes và các dịch vụ backend.`);
             let payload;
@@ -193,4 +193,6 @@
             byId("monitoring-results").setAttribute("aria-busy", "false");
         }
     });
+
+    loadApiConfig("monitoring-api", (message) => feedback("error", message));
 })();

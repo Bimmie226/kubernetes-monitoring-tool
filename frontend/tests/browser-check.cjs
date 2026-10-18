@@ -15,6 +15,7 @@ const browserPath = process.env.BROWSER_PATH || [
 if (!browserPath) throw new Error('Set BROWSER_PATH to an installed Chrome or Edge executable.');
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'k8s-frontend-browser-'));
 let mode = 'success';
+let configBaseUrl = 'http://192.168.174.101:8000';
 const requests = [];
 const errors = [];
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,6 +43,11 @@ function monitoringFixture(namespace) {
     return { namespace, source: mode === 'cache' ? 'redis' : 'k8s-api', check_run_id: 42, status: mode === 'cache' ? 'RUNNING' : 'SUCCESS', data };
 }
 const server = http.createServer(async (req, res) => {
+    if (req.url === '/config.txt') {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        return res.end(`API_BASE_URL=${configBaseUrl}\n`);
+    }
     if (req.url.startsWith('/api/')) {
         let body = '';
         for await (const chunk of req) body += chunk;
@@ -62,7 +68,7 @@ const server = http.createServer(async (req, res) => {
             { name: '<img src=x onerror=alert(1)>', kind: 'ConfigMap', namespace: null, api_version: 'v1', status: 'APPLIED' }
         ] }));
     }
-    const files = { '/': ['index.html', 'text/html'], '/index.html': ['index.html', 'text/html'], '/css/styles.css': ['css/styles.css', 'text/css'], '/js/app.js': ['js/app.js', 'text/javascript'], '/monitoring.html': ['monitoring.html', 'text/html'], '/css/monitoring.css': ['css/monitoring.css', 'text/css'], '/js/monitoring.js': ['js/monitoring.js', 'text/javascript'] };
+    const files = { '/': ['index.html', 'text/html'], '/index.html': ['index.html', 'text/html'], '/css/styles.css': ['css/styles.css', 'text/css'], '/js/config.js': ['js/config.js', 'text/javascript'], '/js/app.js': ['js/app.js', 'text/javascript'], '/monitoring.html': ['monitoring.html', 'text/html'], '/css/monitoring.css': ['css/monitoring.css', 'text/css'], '/js/monitoring.js': ['js/monitoring.js', 'text/javascript'] };
     const file = files[req.url];
     if (!file) { res.writeHead(404); return res.end(); }
     res.setHeader('Content-Type', `${file[1]}; charset=utf-8`);
@@ -112,6 +118,7 @@ async function run() {
     await command('Page.enable');
     await command('Page.navigate', { url: origin });
     await until('document.readyState === "complete" && typeof submitManifest === "function"');
+    await until("element('api-url').value === 'http://192.168.174.101:8000'");
     assert.equal(await evaluate("element('api-url').value"), 'http://192.168.174.101:8000');
     await evaluate(`element('api-url').value = ${JSON.stringify(origin)}`);
     assert.equal(requests.length, 0, 'No automatic apply on page load');
@@ -163,6 +170,7 @@ async function run() {
     const beforeMonitoring = requests.length;
     await evaluate("document.querySelector('a[href=\"monitoring.html\"]').click()");
     await until('document.readyState === "complete" && !!document.getElementById("monitoring-form")');
+    await until("document.getElementById('monitoring-api').value === 'http://192.168.174.101:8000'");
     assert.equal(await evaluate("document.getElementById('monitoring-api').value"), 'http://192.168.174.101:8000');
     assert.equal(requests.length, beforeMonitoring, 'Monitoring must wait for explicit submit');
     await evaluate(`document.getElementById('monitoring-api').value = ${JSON.stringify(origin)}; document.getElementById('namespace').value = 'bad/name'; document.getElementById('check-button').click()`);
@@ -213,10 +221,17 @@ async function run() {
         assert.equal(await evaluate("document.getElementById('monitoring-feedback').textContent.includes('secret-value')"), false);
         if (state === 'empty') assert.equal(await evaluate("document.querySelectorAll('#resource-groups .empty-state').length"), 6);
     }
+    configBaseUrl = 'http://127.0.0.1:9999';
     await evaluate("document.querySelector('nav a[href=\"index.html\"]').click()");
     await until('document.readyState === "complete" && typeof submitManifest === "function"');
+    await until("element('api-url').value === 'http://127.0.0.1:9999'");
+    assert.equal(await evaluate("element('api-url').value"), configBaseUrl, 'Reload picks up changed API configuration');
+    configBaseUrl = '';
+    await command('Page.navigate', { url: origin });
+    await until("document.readyState === 'complete' && element('feedback').dataset.state === 'error'");
+    assert.equal(await evaluate("element('api-url').value"), '', 'Invalid configuration must not populate the API input');
     assert.deepEqual(errors, [], 'No uncaught browser JavaScript exceptions');
-    console.log('PASS: manifest and monitoring API contracts, keyboard input, navigation, duplicate prevention, safe rendering, readiness/unknown/scaled-zero states, cache metadata, loading/empty/errors, namespace validation, responsive widths, browser exceptions.');
+    console.log('PASS: frontend configuration reload/errors, manifest and monitoring API contracts, keyboard input, navigation, duplicate prevention, safe rendering, readiness/unknown/scaled-zero states, cache metadata, loading/empty/errors, namespace validation, responsive widths, browser exceptions.');
     console.log(`Screenshots: ${profile}`);
 }
 

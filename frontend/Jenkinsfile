@@ -51,7 +51,7 @@ pipeline {
                 sh(
                     script: '''
                         docker rm -f k8s-tool-fe || true
-                        docker run --name k8s-tool-fe -dp 80:80 --network minikube luongngocvu/k8s-tool-fe:latest
+                        docker run --name k8s-tool-fe -dp 80:80 --network minikube --env-file frontend/.env luongngocvu/k8s-tool-fe:latest
                     ''', 
                     label: "Deploy stage"
                 )

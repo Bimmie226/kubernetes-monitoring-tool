@@ -206,10 +206,21 @@ Backend khởi tạo Kubernetes clients khi import ứng dụng, vì vậy kubec
 Từ thư mục gốc repository:
 
 ```sh
-python -m http.server 5500 --bind 0.0.0.0 --directory frontend
+python frontend/serve.py --host 0.0.0.0 --port 5500
 ```
 
 Mở `http://192.168.174.101:5500/monitoring.html` hoặc trang Apply Manifest tại `http://192.168.174.101:5500/index.html`. Cả hai trang mặc định gọi API tại `http://192.168.174.101:8000`. Backend cho phép CORS từ `http://192.168.174.101:5500`, `http://127.0.0.1:5500` và `http://localhost:5500`. Nếu địa chỉ backend khác, có thể sửa ngay trong ô **Địa chỉ API** trên giao diện.
+
+Cấu hình frontend nằm trong `frontend/.env` với biến `API_BASE_URL`. Chỉ đặt URL công khai trong file này; trình duyệt luôn nhìn thấy địa chỉ API đang sử dụng. Sau khi đổi URL, khởi động lại frontend và tải lại trang. Lệnh `serve.py` đọc `.env` khi trình duyệt tải cấu hình; nó không phục vụ trực tiếp file `.env`.
+
+Khi chạy bằng Docker/Nginx, truyền file này lúc tạo container:
+
+```sh
+docker build -t k8s-tool-fe ./frontend
+docker run --rm -p 80:80 --env-file frontend/.env k8s-tool-fe
+```
+
+Jenkins cũng truyền `frontend/.env` khi tạo lại container. Docker đọc `--env-file` lúc **tạo** container; sau khi sửa `.env`, cần tạo lại container hoặc chạy lại job deploy, không chỉ dùng `docker restart`. Nếu mở frontend qua cổng 80, backend phải cho phép origin của địa chỉ frontend đó trong CORS; cấu hình CORS hiện ghi ở `backend/app/main.py`.
 
 ### 4. Metric agent
 

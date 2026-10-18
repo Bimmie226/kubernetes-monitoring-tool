@@ -1,20 +1,89 @@
-pipeline {
-    agent {
-        label 'single-node'
+pipeline{
+    agent{
+        label "deploy-server"
+    }
+    
+    environment {
+        BACKEND_IMAGE = 'luongngocvu/k8s-tool-be'
+        GITOPS_REPO = 'http://gitlab.luongvn.com/luongvn/k8s-tool-gitops.git'
+        GITOPS_BRANCH = 'main'
+        GITOPS_OVERLAY = 'dev'
+    }
+
+    options {
+        timestamps() 
+        disableConcurrentBuilds()
     }
 
     stages {
+        stage('Validate Tag') {
+            when {
+                changeset "backend/**"
+            }
+
+            steps {
+                script {
+                    def gitTag = sh(
+                        script: '''
+                            git describe --tags --exact-match HEAD 2>/dev/null || true 
+                        ''',
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (!gitTag) {
+                        error('Commit hiện tại không có Git tag, BE pipeline sẽ không được build') 
+                    }
+
+                    env.IMAGE_TAG = gitTag
+                    echo "BE release tag: ${env.IMAGE_TAG}"
+                }
+            }       
+        }
+
+        stage('Test with SonarQube') {
+            steps {
+                withSonarQubeEnv('sonarqube-server-connection') {
+                    withCredentials([
+                        string(
+                            credentialsId: 'sonar-scanner-token',
+                            variable: 'SONAR_TOKEN'
+                        )
+                    ]) {
+                        sh(
+                            script: '''
+                                docker run --rm \
+                                -v "$WORKSPACE/backend:/project" \
+                                --workdir=/project \
+                                -e SONAR_TOKEN \
+                                sonarsource/sonar-scanner-cli \
+                                -Dsonar.host.url="$SONAR_HOST_URL" \
+                                -Dsonar.token="$SONAR_TOKEN" \
+                                -Dsonar.projectKey="k8s-monitoring-tool" \
+                                -Dsonar.projectName="k8s-monitoring-tool" \
+                                -Dsonar.sources="." \
+                                -Dsonar.python.version="3.12" \
+                                -Dsonar.projectVersion="v1.0.0"
+                            ''',
+                            label: 'SonarQube scan'
+                        )
+                    }
+                }
+            }
+        }
+
         stage('Build') {
             when {
                 changeset "backend/**"
             }
+
             steps {
+                echo "Building BE image: ${BACKEND_IMAGE}:${IMAGE_TAG}"
+
                 sh(
                     script: '''
-                        chown -R luongvn. .
-                        docker build -t luongngocvu/k8s-tool-be:latest ./backend
-                    ''',
-                    label: "Build stage"
+                        docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
+                    ''', 
+                    label: 'Build BE Image'
                 )
             }
         }
@@ -23,44 +92,75 @@ pipeline {
             when {
                 changeset "backend/**"
             }
+
             steps {
                 withCredentials([
-                    usernamePassword (
-                        credentialsId: 'dockerhub-user', 
-                        usernameVariable: 'DOCKER_USER', 
+                    usernamePassword(
+                        credentialsId: 'dockerhub-user',
+                        usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_TOKEN'
                     )
                 ]) {
+
                     sh(
                         script: '''
                             echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push luongngocvu/k8s-tool-be:latest
+                            docker push $BACKEND_IMAGE:$IMAGE_TAG
                             docker logout
-                        ''', 
-                        label: "Push image stage"
+                        ''',
+                        label: 'Push BE Image'
                     )
                 }
             }
-        }   
+        }
 
-        stage('Deploy') {
+        stage('Update GitOps') {
             when {
                 changeset "backend/**"
             }
+
             steps {
-                withCredentials([
-                    file(
-                        credentialsId: 'k8s-monitor-tool-be',
-                        variable: 'ENV_FILE'
+                dir('gitops-repo') {
+                    deleteDir()
+
+                    git(
+                        branch: "${GITOPS_BRANCH}",
+                        credentialsId: 'luongvn-gitlab-user-account',
+                        url: "${GITOPS_REPO}"
                     )
-                ]) {
-                    sh(
-                        script: '''
-                            docker rm -f k8s-tool-be || true
-                            docker run --name k8s-tool-be -dp 8000:8000 --network minikube --env-file "$ENV_FILE" -e K8S_CONFIG_MODE=kubeconfig -e KUBERNETES_PATH=/config/kubeconfig -v /home/luongvn/kubeconfig-container.yaml:/config/kubeconfig:ro luongngocvu/k8s-tool-be:latest
-                        ''', 
-                        label: "Deploy stage"
-                    )
+
+                    dir("applications/k8s-monitor-tool/overlays/${GITOPS_OVERLAY}") {
+                        sh(
+                            script: '''
+                                kustomize edit set image $BACKEND_IMAGE=$BACKEND_IMAGE:$IMAGE_TAG
+                            ''',
+                            label: 'Update Backend Image'
+                        )
+                    }
+
+                    sh '''
+                        git config user.name "Jenkins"
+                        git config user.email "jenkins@luongvn.local"
+                        git add .
+
+                        if git diff --cached --quiet; then
+                            echo "GitOps repository không có thay đổi."
+                            exit 0
+                        fi
+
+                        git commit -m "deploy(backend): $IMAGE_TAG [skip ci]"
+                    '''
+
+                    withCredentials([
+                        gitUsernamePassword(
+                            credentialsId: 'luongvn-gitlab-user-account',
+                            gitToolName: 'Default'
+                        )
+                    ]) {
+                        sh '''
+                            git push origin HEAD:$GITOPS_BRANCH
+                        '''
+                    }
                 }
             }
         }

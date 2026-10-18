@@ -115,7 +115,7 @@ async function submitManifest(event) {
         try {
             response = await fetch(`${baseUrl.href.replace(/\/$/, "")}${endpoint}`, options);
         } catch {
-            throw new Error("Không nhận được phản hồi từ backend. Kiểm tra địa chỉ API, kết nối mạng và CORS. Mở giao diện tại http://192.168.174.101:5500 hoặc địa chỉ local được backend cho phép.");
+            throw new Error("Không nhận được phản hồi từ backend. Kiểm tra địa chỉ API, kết nối mạng và CORS; đảm bảo backend cho phép origin của frontend.");
         }
         let data;
         try { data = await response.json(); } catch { data = null; }
@@ -149,3 +149,5 @@ element("manifest-file").addEventListener("change", () => {
     const file = element("manifest-file").files[0];
     element("file-info").textContent = file ? `${file.name} · ${(file.size / 1024).toFixed(1)} KB` : "Chưa chọn file.";
 });
+
+loadApiConfig("api-url", (message) => feedback("error", message, "Lỗi cấu hình"));
